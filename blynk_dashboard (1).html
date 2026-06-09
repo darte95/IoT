@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blynk Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #05050d;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.75rem;
+      padding-bottom: 1rem;
+      border-bottom: 0.5px solid #1e2535;
+      flex-wrap: wrap;
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: #e02020;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo i { color: #fff; font-size: 20px; }
+    .htext h1 { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 0.4px; }
+    .htext p  { font-size: 12px; color: #5a6a8a; margin-top: 2px; }
+    .conn-status {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .conn-label { font-size: 12px; color: #5a6a8a; }
+    .conn-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #3a4a6a;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    /* ─── Grid ─── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .full { grid-column: 1 / -1; }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      .full { grid-column: 1; }
+      body { padding: 1rem 0.75rem; }
+      .htext h1 { font-size: 17px; }
+    }
+
+    /* ─── Card ─── */
+    .card {
+      background: #0f111a;
+      border: 0.5px solid #1e2535;
+      border-radius: 14px;
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .card.red::before    { background: #e02020; }
+    .card.blue::before   { background: #1e6fff; }
+    .card.cyan::before   { background: #22d3ee; }
+    .card.white::before  { background: #c0c8e0; }
+    .card.green::before  { background: #22c55e; }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 600;
+      color: #5a6a8a;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+    .card-icon {
+      width: 32px; height: 32px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      flex-shrink: 0;
+    }
+    .icon-red   { background: #e0202015; color: #e02020; }
+    .icon-blue  { background: #1e6fff15; color: #1e6fff; }
+    .icon-cyan  { background: #22d3ee15; color: #22d3ee; }
+    .icon-white { background: #c0c8e015; color: #c0c8e0; }
+    .icon-green { background: #22c55e15; color: #22c55e; }
+
+    /* ─── Toggle Switch ─── */
+    .toggle-wrap { display: flex; align-items: center; gap: 14px; margin-top: 0.25rem; }
+    .toggle { position: relative; width: 54px; height: 30px; cursor: pointer; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider-sw {
+      position: absolute; inset: 0;
+      background: #1e2535;
+      border-radius: 30px;
+      transition: 0.25s;
+      border: 0.5px solid #2a3550;
+    }
+    .slider-sw::before {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      left: 3px; top: 3px;
+      background: #5a6a8a;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+    input:checked + .slider-sw { background: #e02020; border-color: #e02020; }
+    input:checked + .slider-sw::before { transform: translateX(24px); background: #fff; }
+    .toggle-label { font-size: 22px; font-weight: 500; color: #fff; }
+    .toggle-sub   { font-size: 12px; color: #5a6a8a; margin-top: 3px; }
+
+    /* ─── Range ─── */
+    .range-val { font-size: 34px; font-weight: 500; color: #fff; margin-bottom: 0.75rem; line-height: 1; }
+    .range-unit { font-size: 14px; color: #5a6a8a; font-weight: 400; }
+    input[type="range"] {
+      width: 100%; height: 4px;
+      -webkit-appearance: none; appearance: none;
+      background: #1e2535; border-radius: 4px;
+      outline: none; cursor: pointer;
+      margin: 8px 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #05050d;
+    }
+    #sl-v2::-webkit-slider-thumb { background: #1e6fff; }
+    #sl-v3::-webkit-slider-thumb { background: #c0c8e0; }
+    .range-row { display: flex; justify-content: space-between; font-size: 11px; color: #3a4a6a; margin-top: 4px; }
+
+    /* ─── LED ─── */
+    .led-wrap { display: flex; align-items: center; gap: 18px; }
+    .led-ring {
+      width: 58px; height: 58px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #22d3ee33;
+      flex-shrink: 0;
+    }
+    .led-inner {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .led-inner.off { background: #1e2535; box-shadow: none; }
+    .led-inner.on  { background: #22d3ee; box-shadow: 0 0 14px #22d3ee77; }
+    .led-status { font-size: 20px; font-weight: 500; color: #fff; }
+    .led-sub    { font-size: 12px; color: #5a6a8a; margin-top: 4px; }
+
+    /* ─── Gauge ─── */
+    .gauge-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .gauge-svg  { flex-shrink: 0; }
+    .gauge-info { flex: 1; min-width: 120px; }
+    .gauge-val  { font-size: 36px; font-weight: 500; color: #fff; line-height: 1; }
+    .gauge-lbl  { font-size: 11px; color: #5a6a8a; margin-top: 6px; }
+
+    /* ─── Label ─── */
+    .label-box {
+      background: #060810;
+      border: 0.5px solid #1e2535;
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-top: 0.25rem;
+    }
+    .label-text { font-size: 20px; font-weight: 500; color: #fff; word-break: break-all; }
+    .label-time { font-size: 11px; color: #3a4a6a; margin-top: 6px; }
+
+    /* ─── Text Input ─── */
+    input[type="text"] {
+      flex: 1; min-width: 0;
+      background: #060810;
+      border: 0.5px solid #1e2535;
+      color: #fff;
+      border-radius: 7px;
+      padding: 8px 12px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    input[type="text"]:focus { border-color: #22d3ee55; }
+    input[type="text"]::placeholder { color: #3a4a6a; }
+
+    /* ─── Buttons ─── */
+    .btn-row {
+      display: flex; gap: 8px;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .label-row {
+      display: flex; gap: 8px;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 0.5px solid;
+      transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn i { font-size: 14px; }
+    .btn-red   { background: #e0202012; border-color: #e0202060; color: #e02020; }
+    .btn-red:hover   { background: #e0202028; }
+    .btn-blue  { background: #1e6fff12; border-color: #1e6fff60; color: #1e6fff; }
+    .btn-blue:hover  { background: #1e6fff28; }
+    .btn-cyan  { background: #22d3ee12; border-color: #22d3ee60; color: #22d3ee; }
+    .btn-cyan:hover  { background: #22d3ee28; }
+    .btn-ghost { background: transparent; border-color: #1e2535; color: #5a6a8a; }
+    .btn-ghost:hover { background: #1e2535; color: #9ab; }
+
+    /* ─── Toast ─── */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: #0f111a;
+      border: 0.5px solid #1e2535;
+      border-radius: 9px;
+      padding: 10px 16px;
+      font-size: 13px; color: #fff;
+      display: none; align-items: center; gap: 8px;
+      z-index: 9999; max-width: 280px;
+      box-shadow: 0 4px 24px #00000077;
+    }
+    .toast.show { display: flex; }
+    .toast-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    @media (max-width: 400px) {
+      .toast { left: 0.75rem; right: 0.75rem; max-width: none; }
+      .range-val { font-size: 26px; }
+      .gauge-val  { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo"><i class="ti ti-cpu"></i></div>
+      <div class="htext">
+        <h1>Blynk Dashboard</h1>
+        <p>IoT Control Panel · HTTP API</p>
+      </div>
+      <div class="conn-status">
+        <span class="conn-label" id="conn-label">กำลังตรวจสอบ...</span>
+        <div class="conn-dot" id="conn-dot"></div>
+      </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid">
+
+      <!-- ปุ่มเปิด/ปิด — V0 -->
+      <div class="card red">
+        <div class="card-header">
+          <span class="card-title">ปุ่มเปิด / ปิด</span>
+          <div class="card-icon icon-red"><i class="ti ti-toggle-right"></i></div>
+        </div>
+        <div class="toggle-wrap">
+          <label class="toggle" aria-label="เปิดปิดอุปกรณ์">
+            <input type="checkbox" id="sw-v0" onchange="handleToggle(this)">
+            <span class="slider-sw"></span>
+          </label>
+          <div>
+            <div class="toggle-label" id="sw-label">ปิด</div>
+            <div class="toggle-sub">V0 · int · 0 – 1</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-red" onclick="readPin('V0','toggle')">
+            <i class="ti ti-refresh"></i>อ่านสถานะ
+          </button>
+        </div>
+      </div>
+
+      <!-- ปรับค่าแสง — V2 -->
+      <div class="card blue">
+        <div class="card-header">
+          <span class="card-title">ปรับค่าแสง</span>
+          <div class="card-icon icon-blue"><i class="ti ti-brightness"></i></div>
+        </div>
+        <div class="range-val">
+          <span id="light-val">128</span>
+          <span class="range-unit">/ 255</span>
+        </div>
+        <input type="range" min="0" max="255" value="128" step="1"
+               id="sl-v2"
+               oninput="updateLightDisplay(this)"
+               onchange="handleSlider(this)">
+        <div class="range-row">
+          <span>0</span><span>64</span><span>128</span><span>192</span><span>255</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-blue" onclick="readPin('V2','slider')">
+            <i class="ti ti-refresh"></i>อ่านค่า
+          </button>
+          <button class="btn btn-ghost" onclick="setSlider(0)">ปิด</button>
+          <button class="btn btn-ghost" onclick="setSlider(128)">กลาง</button>
+          <button class="btn btn-ghost" onclick="setSlider(255)">สูงสุด</button>
+        </div>
+      </div>
+
+      <!-- สถานะการทำงาน — V1 -->
+      <div class="card cyan">
+        <div class="card-header">
+          <span class="card-title">สถานะการทำงาน</span>
+          <div class="card-icon icon-cyan"><i class="ti ti-circle-dot"></i></div>
+        </div>
+        <div class="led-wrap">
+          <div class="led-ring">
+            <div class="led-inner off" id="led-v1"></div>
+          </div>
+          <div>
+            <div class="led-status" id="led-label">ไม่ทราบ</div>
+            <div class="led-sub">V1 · LED Indicator</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-cyan" onclick="writePin('V1','1','led')">
+            <i class="ti ti-send"></i>ส่ง ON (=1)
+          </button>
+          <button class="btn btn-ghost" onclick="writePin('V1','0','led')">
+            ส่ง OFF (=0)
+          </button>
+        </div>
+      </div>
+
+      <!-- ค่าอุณหภูมิ — V3 -->
+      <div class="card white">
+        <div class="card-header">
+          <span class="card-title">ค่าอุณหภูมิ</span>
+          <div class="card-icon icon-white"><i class="ti ti-temperature"></i></div>
+        </div>
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" width="84" height="84" viewBox="0 0 84 84">
+            <circle cx="42" cy="42" r="32" fill="none" stroke="#1e2535" stroke-width="8"/>
+            <circle cx="42" cy="42" r="32" fill="none" stroke="#c0c8e0" stroke-width="8"
+              stroke-dasharray="201.06" stroke-dashoffset="100.53"
+              stroke-linecap="round"
+              transform="rotate(-90 42 42)"
+              id="gauge-arc"/>
+            <text x="42" y="47"
+              text-anchor="middle"
+              fill="#fff"
+              font-size="16"
+              font-weight="600"
+              font-family="-apple-system,sans-serif"
+              id="gauge-svg-val">55</text>
+          </svg>
+          <div class="gauge-info">
+            <div class="gauge-val">
+              <span id="gauge-val">55</span>
+              <span class="range-unit"> °C</span>
+            </div>
+            <div style="margin-top:8px">
+              <input type="range" min="0" max="100" value="55" step="1"
+                     id="sl-v3"
+                     oninput="updateGauge(this)"
+                     onchange="handleGaugeWrite(this)">
+            </div>
+            <div class="gauge-lbl">V3 · gauge · 0 – 100</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost"
+            onclick="writePin('V3', document.getElementById('sl-v3').value, 'gauge')">
+            <i class="ti ti-send"></i>เขียนค่า
+          </button>
+        </div>
+      </div>
+
+      <!-- การตอบกลับ — V4 (full width) -->
+      <div class="card green full">
+        <div class="card-header">
+          <span class="card-title">การตอบกลับ</span>
+          <div class="card-icon icon-green"><i class="ti ti-message-dots"></i></div>
+        </div>
+        <div class="label-box">
+          <div class="label-text" id="label-v4">—</div>
+          <div class="label-time" id="label-time">ยังไม่ได้รับข้อมูล</div>
+        </div>
+        <div class="label-row">
+          <input type="text" id="label-input" placeholder="พิมพ์ข้อความที่ต้องการส่ง...">
+        </div>
+        <div class="btn-row" style="margin-top:0.5rem">
+          <button class="btn btn-cyan" onclick="sendLabel()">
+            <i class="ti ti-send"></i>ส่งข้อความ
+          </button>
+          <button class="btn btn-ghost" onclick="sendLabelPreset('Hello')">Hello</button>
+          <button class="btn btn-ghost" onclick="sendLabelPreset('ON')">ON</button>
+          <button class="btn btn-ghost" onclick="sendLabelPreset('OK')">OK</button>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+  </div><!-- /container -->
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast">
+    <div class="toast-dot" id="toast-dot"></div>
+    <span id="toast-msg">สำเร็จ</span>
+  </div>
+
+  <script>
+    /* ════════════════════════════════════
+       CONFIG
+    ════════════════════════════════════ */
+    const TOKEN = '6e5vmPTb0ZiGFMoZcucdNQSZABSOsyNW';
+    const BASE   = 'https://blynk.cloud/external/api';
+
+    /* ════════════════════════════════════
+       TOAST
+    ════════════════════════════════════ */
+    let toastTimer = null;
+    function showToast(msg, ok = true) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-dot').style.background = ok ? '#22c55e' : '#e02020';
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+    }
+
+    /* ════════════════════════════════════
+       API HELPER
+    ════════════════════════════════════ */
+    async function apiFetch(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }
+
+    /* ════════════════════════════════════
+       CONNECTION CHECK
+    ════════════════════════════════════ */
+    async function checkConnection() {
+      const dot   = document.getElementById('conn-dot');
+      const label = document.getElementById('conn-label');
+      try {
+        await apiFetch(`${BASE}/get?token=${TOKEN}&V0`);
+        dot.style.background = '#22c55e';
+        dot.style.boxShadow  = '0 0 7px #22c55e66';
+        label.textContent    = 'เชื่อมต่อแล้ว';
+      } catch (e) {
+        dot.style.background = '#e02020';
+        dot.style.boxShadow  = '0 0 7px #e0202066';
+        label.textContent    = 'ไม่ได้เชื่อมต่อ';
+      }
+    }
+
+    /* ════════════════════════════════════
+       V0 — TOGGLE
+    ════════════════════════════════════ */
+    async function handleToggle(el) {
+      const val = el.checked ? 1 : 0;
+      setToggleUI(val);
+      try {
+        await apiFetch(`${BASE}/update?token=${TOKEN}&V0=${val}`);
+        showToast(`V0 = ${val} — ${val ? 'เปิด' : 'ปิด'}สำเร็จ`);
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, false);
+      }
+    }
+
+    function setToggleUI(val) {
+      document.getElementById('sw-v0').checked = !!+val;
+      document.getElementById('sw-label').textContent = +val ? 'เปิด' : 'ปิด';
+    }
+
+    /* ════════════════════════════════════
+       V2 — SLIDER (ปรับค่าแสง)
+    ════════════════════════════════════ */
+    function updateLightDisplay(el) {
+      document.getElementById('light-val').textContent = el.value;
+    }
+
+    async function handleSlider(el) {
+      try {
+        await apiFetch(`${BASE}/update?token=${TOKEN}&V2=${el.value}`);
+        showToast(`V2 = ${el.value} — อัพเดตค่าแสงสำเร็จ`);
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, false);
+      }
+    }
+
+    function setSlider(v) {
+      const sl = document.getElementById('sl-v2');
+      sl.value = v;
+      document.getElementById('light-val').textContent = v;
+      handleSlider(sl);
+    }
+
+    /* ════════════════════════════════════
+       V1 — LED
+    ════════════════════════════════════ */
+    function setLedUI(val) {
+      const on = String(val) === '1';
+      document.getElementById('led-v1').className = 'led-inner ' + (on ? 'on' : 'off');
+      document.getElementById('led-label').textContent = on ? 'ทำงาน' : 'หยุดทำงาน';
+    }
+
+    /* ════════════════════════════════════
+       V3 — GAUGE (ค่าอุณหภูมิ)
+    ════════════════════════════════════ */
+    function updateGaugeArc(v) {
+      const pct    = Math.min(Math.max(+v, 0), 100) / 100;
+      const full   = 201.06;
+      const half   = 100.53;
+      const offset = half - pct * full + half;
+      document.getElementById('gauge-arc').setAttribute('stroke-dashoffset', offset);
+    }
+
+    function updateGauge(el) {
+      const v = Number(el.value);
+      document.getElementById('gauge-val').textContent     = v;
+      document.getElementById('gauge-svg-val').textContent = v;
+      updateGaugeArc(v);
+    }
+
+    async function handleGaugeWrite(el) {
+      await writePin('V3', el.value, 'gauge');
+    }
+
+    /* ════════════════════════════════════
+       GENERIC WRITE
+    ════════════════════════════════════ */
+    async function writePin(pin, val, type) {
+      try {
+        await apiFetch(`${BASE}/update?token=${TOKEN}&${pin}=${encodeURIComponent(val)}`);
+        if (type === 'led') setLedUI(val);
+        if (type === 'gauge') {
+          const v = Number(val);
+          document.getElementById('gauge-val').textContent     = v;
+          document.getElementById('gauge-svg-val').textContent = v;
+          document.getElementById('sl-v3').value = v;
+          updateGaugeArc(v);
+        }
+        showToast(`${pin} = ${val} — ส่งสำเร็จ`);
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, false);
+      }
+    }
+
+    /* ════════════════════════════════════
+       GENERIC READ
+    ════════════════════════════════════ */
+    async function readPin(pin, type) {
+      try {
+        const raw = await apiFetch(`${BASE}/get?token=${TOKEN}&${pin}`);
+        const val = raw.trim();
+        if (type === 'toggle') {
+          setToggleUI(val);
+          showToast(`V0 = ${val} — ${val === '1' ? 'เปิด' : 'ปิด'}`);
+        }
+        if (type === 'slider') {
+          const num = parseInt(val) || 0;
+          document.getElementById('sl-v2').value = num;
+          document.getElementById('light-val').textContent = num;
+          showToast(`V2 = ${num}`);
+        }
+      } catch (e) {
+        showToast('อ่านไม่ได้: ' + e.message, false);
+      }
+    }
+
+    /* ════════════════════════════════════
+       V4 — LABEL
+    ════════════════════════════════════ */
+    async function sendLabel() {
+      const txt = document.getElementById('label-input').value.trim();
+      if (!txt) { showToast('กรุณาพิมพ์ข้อความ', false); return; }
+      await sendLabelPreset(txt);
+    }
+
+    async function sendLabelPreset(txt) {
+      try {
+        await apiFetch(`${BASE}/update?token=${TOKEN}&V4=${encodeURIComponent(txt)}`);
+        document.getElementById('label-v4').textContent = txt;
+        document.getElementById('label-time').textContent =
+          'อัพเดตล่าสุด: ' + new Date().toLocaleTimeString('th-TH');
+        showToast(`V4 = "${txt}" — ส่งสำเร็จ`);
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, false);
+      }
+    }
+
+    /* ════════════════════════════════════
+       INIT
+    ════════════════════════════════════ */
+    updateGaugeArc(55);
+    checkConnection();
+  </script>
+</body>
+</html>
