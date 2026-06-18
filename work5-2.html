@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smart Home Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0b1220;
+    color:white;
+}
+
+/* layout */
+.container{
+    display:grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap:10px;
+    padding:10px;
+}
+
+/* house plan style */
+.house{
+    background:#111a2e;
+    border-radius:15px;
+    padding:10px;
+    position:relative;
+}
+
+/* rooms */
+.room{
+    background:#1f2a44;
+    padding:15px;
+    margin:10px;
+    border-radius:12px;
+    text-align:center;
+    transition:0.3s;
+}
+
+.room.active{
+    background:#22c55e;
+    color:black;
+    font-weight:bold;
+}
+
+/* toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.switch input {display:none;}
+
+.slider {
+  position:absolute;
+  cursor:pointer;
+  top:0;left:0;right:0;bottom:0;
+  background:#ef4444;
+  border-radius:30px;
+  transition:.3s;
+}
+
+.slider:before {
+  position:absolute;
+  content:"";
+  height:22px;
+  width:22px;
+  left:4px;
+  bottom:4px;
+  background:white;
+  border-radius:50%;
+  transition:.3s;
+}
+
+input:checked + .slider {
+  background:#22c55e;
+}
+
+input:checked + .slider:before {
+  transform:translateX(30px);
+}
+
+/* control panel */
+.panel{
+    background:#111a2e;
+    border-radius:15px;
+    padding:15px;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.on{background:#22c55e;}
+.off{background:#ef4444;}
+</style>
+</head>
+
+<body>
+
+<h2 style="text-align:center;">🏠 Smart Home Dashboard</h2>
+
+<div class="container">
+
+<!-- LEFT -->
+<div class="panel">
+    <h3>Control Panel</h3>
+    <button class="on" onclick="allOn()">ALL ON</button>
+    <button class="off" onclick="allOff()">ALL OFF</button>
+</div>
+
+<!-- CENTER HOUSE -->
+<div class="house">
+
+    <div class="room" id="bedroom">
+        🛏 Bedroom<br>
+        <label class="switch">
+            <input type="checkbox" onchange="toggleRoom('bedroom',this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="room" id="bathroom">
+        🚿 Bathroom<br>
+        <label class="switch">
+            <input type="checkbox" onchange="toggleRoom('bathroom',this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="room" id="kitchenroom">
+        🍳 Kitchen<br>
+        <label class="switch">
+            <input type="checkbox" onchange="toggleRoom('kitchenroom',this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="room" id="front">
+        🚪 Front<br>
+        <label class="switch">
+            <input type="checkbox" onchange="toggleRoom('front',this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="room" id="chillroom">
+        🛋 Chill Room<br>
+        <label class="switch">
+            <input type="checkbox" onchange="toggleRoom('chillroom',this)">
+            <span class="slider"></span>
+        </label>
+    </div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="panel">
+    <h3>Status</h3>
+    <div id="statusBox">Waiting...</div>
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC7yMdPOHmAWFt4rorvObO7fOAILemgq6M",
+  authDomain: "iot1-d8749.firebaseapp.com",
+  projectId: "iot1-d8749",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const rooms = ["bedroom","bathroom","kitchenroom","front","chillroom"];
+
+// realtime listener
+rooms.forEach(r=>{
+    const ref = doc(db,"IoT_Home","control");
+
+    onSnapshot(ref,(snap)=>{
+        if(!snap.exists()) return;
+
+        const data = snap.data();
+
+        rooms.forEach(room=>{
+            const el = document.getElementById(room);
+            const val = data[room];
+
+            if(val == 1){
+                el.classList.add("active");
+                el.querySelector("input").checked = true;
+            }else{
+                el.classList.remove("active");
+                el.querySelector("input").checked = false;
+            }
+        });
+    });
+});
+
+// toggle single room
+window.toggleRoom = async function(room,el){
+
+    const ref = doc(db,"IoT_Home","control");
+
+    const snap = await (await import(
+      "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"
+    )).getDoc(ref);
+
+    let data = snap.data();
+
+    data[room] = el.checked ? 1 : 0;
+
+    await setDoc(ref,data);
+}
+
+// ALL ON
+window.allOn = async function(){
+
+    const ref = doc(db,"IoT_Home","control");
+
+    await setDoc(ref,{
+        bedroom:1,
+        bathroom:1,
+        kitchenroom:1,
+        front:1,
+        chillroom:1
+    });
+}
+
+// ALL OFF
+window.allOff = async function(){
+
+    const ref = doc(db,"IoT_Home","control");
+
+    await setDoc(ref,{
+        bedroom:0,
+        bathroom:0,
+        kitchenroom:0,
+        front:0,
+        chillroom:0
+    });
+}
+
+</script>
+
+</body>
+</html>
