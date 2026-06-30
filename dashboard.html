@@ -404,7 +404,8 @@ Auto Refresh every 5 seconds
 
 <script>
 
-const API="http://tc.sbtc-mng.com/api.php";
+// ใช้ Relative Path เพื่อรองรับหลายแพลทฟอร์ม
+const API="./api.php";
 
 async function loadData(){
 
@@ -412,7 +413,11 @@ try{
 
 const res=await fetch(API);
 
+if(!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
 const json=await res.json();
+
+if(!json.success) throw new Error(json.message || "API Error");
 
 document.getElementById("total").innerHTML=json.count;
 
@@ -486,8 +491,10 @@ new Date().toLocaleTimeString();
 }
 catch(e){
 
+console.error("API Error:", e.message);
+
 document.getElementById("devices").innerHTML=
-"<h2>Cannot connect API</h2>";
+"<h2>❌ Cannot connect API</h2><p>"+e.message+"</p>";
 
 }
 
