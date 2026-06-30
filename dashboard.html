@@ -73,10 +73,20 @@
         .pulse-dot {
             width: 12px;
             height: 12px;
-            background-color: var(--green-active);
+            background-color: var(--text-muted);
             border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .pulse-active {
+            background-color: var(--green-active);
             box-shadow: 0 0 10px var(--green-active);
             animation: pulseGlow 2s infinite;
+        }
+
+        .pulse-error {
+            background-color: var(--red-inactive);
+            box-shadow: 0 0 10px var(--red-inactive);
         }
 
         /* Dashboard Grid Layout */
@@ -184,6 +194,16 @@
             margin-top: 8px;
         }
 
+        .error-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: rgba(239, 44, 68, 0.05);
+            border: 1px dashed var(--red-inactive);
+            border-radius: 16px;
+            color: #fca5a5;
+        }
+
         /* Animations */
         @keyframes pulseGlow {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
@@ -202,29 +222,21 @@
     <header>
         <h1><i class="fa-solid fa-circle-nodes"></i> IoT Live Monitor</h1>
         <div class="status-panel">
-            <span id="update-time">กำลังเชื่อมต่อ API...</span>
+            <span id="update-time">กำลังเริ่มต้นระบบ...</span>
             <div class="pulse-dot" id="api-indicator"></div>
         </div>
     </header>
 
-    <div class="dashboard-grid" id="dashboard-container"></div>
+    <div class="dashboard-grid" id="dashboard-container">
+        <div style="grid-column:1/-1; text-align:center; padding: 3rem; color:var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+            <p>กำลังโหลดข้อมูลจาก API...</p>
+        </div>
+    </div>
 
     <script>
         const API_ENDPOINT = 'http://tc.sbtc-mng.com/api.php';
         const AUTO_REFRESH_INTERVAL = 5000; // 5 วินาที
-
-        // ข้อมูลสำรอง (Mock Data) สำหรับเปิดทดสอบแบบ Offline หรือแก้ปัญหา CORS บน Local เครื่องตนเอง
-        const backupData = {
-            "success": true,
-            "count": 5,
-            "data": [
-                { "id": "1", "device_name": "LED1", "device_type": "LED", "pin": "13", "status": "ON", "created_at": "2026-06-30 10:16:41" },
-                { "id": "2", "device_name": "LED2", "device_type": "LED", "pin": "12", "status": "OFF", "created_at": "2026-06-30 10:16:41" },
-                { "id": "3", "device_name": "Temperature", "device_type": "SENSOR", "pin": "34", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" },
-                { "id": "4", "device_name": "Humidity", "device_type": "SENSOR", "pin": "35", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" },
-                { "id": "5", "device_name": "Soil Moisture", "device_type": "SENSOR", "pin": "36", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" }
-            ]
-        };
 
         // ฟังก์ชันคัดเลือกไอคอนให้เข้ากับชื่ออุปกรณ์อัตโนมัติ
         function assignDeviceIcon(type, name) {
@@ -240,7 +252,6 @@
         function buildCardHtml(device) {
             const icon = assignDeviceIcon(device.device_type, device.device_name);
             const dynamicStatusClass = `status-${device.status.toUpperCase()}`;
-            // ดึงเฉพาะส่วนเวลาออกมาแสดงผล (ตัดปี-เดือน-วัน ออกเพื่อความกระชับ)
             const formattedTime = device.created_at.split(' ')[1] || device.created_at;
 
             return `
@@ -271,37 +282,44 @@
             
             // อัปเดตเวลาล่าสุดที่ดึงข้อมูลสำเร็จบนเมนูบาร์
             const timestamp = new Date();
-            const timeString = timestamp.toLocaleTimeString('th-TH');
-            document.getElementById('update-time').innerText = `อัปเดตล่าสุด: ${timeString}`;
+            document.getElementById('update-time').innerText = `อัปเดตล่าสุด: ${timestamp.toLocaleTimeString('th-TH')}`;
         }
 
         // ฟังก์ชันหลักที่ทำหน้าที่ Request ข้อมูลจาก API
         async function fetchSensorData() {
             const indicator = document.getElementById('api-indicator');
+            const container = document.getElementById('dashboard-container');
+
             try {
                 const response = await fetch(API_ENDPOINT);
-                if (!response.ok) throw new Error('HTTP request failed');
+                if (!response.ok) throw new Error('HTTP Status Error');
                 
                 const jsonResult = await response.json();
                 if (jsonResult.success && jsonResult.data) {
                     updateDashboardUI(jsonResult.data);
                     
-                    // ปรับสีไฟสถานะเป็น สีเขียว (เชื่อมต่อสำเร็จปกติ)
-                    indicator.style.backgroundColor = 'var(--green-active)';
-                    indicator.style.boxShadow = '0 0 10px var(--green-active)';
+                    // ปรับสีไฟสถานะเป็น สีเขียวกระพริบ (Online)
+                    indicator.className = 'pulse-dot pulse-active';
+                } else {
+                    throw new Error('API response layout mismatch');
                 }
             } catch (err) {
-                console.warn('เกิดข้อผิดพลาดในการดึงข้อมูลจาก API (ใช้ Mock Data แทน):', err.message);
+                console.error('Fetch error:', err.message);
                 
-                // สลับมาแสดงผลข้อมูลสำรองทันที
-                updateDashboardUI(backupData.data);
-                
-                // เปลี่ยนไฟสถานะเป็น สีส้มแจ้งเตือน (บ่งบอกว่าใช้ข้อมูลสำรอง/ติด CORS)
-                indicator.style.backgroundColor = '#f59e0b';
-                indicator.style.boxShadow = '0 0 10px #f59e0b';
-                
-                const currentTime = new Date().toLocaleTimeString('th-TH');
-                document.getElementById('update-time').innerText = `โหมดสำรอง (ติด CORS/Offline): ${currentTime}`;
+                // เปลี่ยนไฟสถานะเป็น สีแดง (Error/Offline)
+                indicator.className = 'pulse-dot pulse-error';
+                document.getElementById('update-time').innerText = `การเชื่อมต่อล้มเหลว`;
+
+                // แสดงหน้าจอแจ้งเตือนข้อผิดพลาด (CORS หรือ Server down)
+                container.innerHTML = `
+                    <div class="error-container">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>ไม่สามารถดึงข้อมูลจาก API ได้</h3>
+                        <p style="margin-top: 0.5rem; opacity: 0.8; font-size: 0.9rem;">
+                            โปรดตรวจสอบว่าเปิดใช้งาน CORS บนเซิร์ฟเวอร์เรียบร้อยแล้ว หรือเซิร์ฟเวอร์ยังทำงานอยู่
+                        </p>
+                    </div>
+                `;
             }
         }
 
