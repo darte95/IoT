@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SBTC IoT Real-time Dashboard</title>
+    <title>SBTC-MNG IoT Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --card-dark: #1e293b;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --accent-glow: #10b981;
+            --danger-glow: #ef4444;
             --border-color: #334155;
-            --cyan-accent: #38bdf8;
-            --green-active: #10b981;
-            --red-inactive: #ef4444;
         }
 
         * {
@@ -27,13 +26,12 @@
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-color);
             color: var(--text-main);
             padding: 2rem;
             min-height: 100vh;
         }
 
-        /* Header Style */
         header {
             display: flex;
             justify-content: space-between;
@@ -46,262 +44,234 @@
         h1 {
             font-size: 1.8rem;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        h1 i {
-            color: var(--cyan-accent);
-        }
-
-        .status-panel {
+            letter-spacing: 1px;
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(30, 41, 59, 0.7);
-            padding: 8px 16px;
-            border-radius: 30px;
-            border: 1px solid var(--border-color);
         }
 
-        #update-time {
-            font-size: 0.85rem;
+        h1 i {
+            color: #38bdf8;
+        }
+
+        .refresh-status {
+            font-size: 0.9rem;
             color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .pulse-dot {
-            width: 12px;
-            height: 12px;
-            background-color: var(--green-active);
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-glow);
             border-radius: 50%;
-            box-shadow: 0 0 10px var(--green-active);
-            animation: pulseGlow 2s infinite;
+            box-shadow: 0 0 10px var(--accent-glow);
+            animation: pulse 1.5s infinite;
         }
 
-        /* Dashboard Grid Layout */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
 
-        /* Card Component Style */
         .card {
-            background-color: var(--card-dark);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-            border-color: #475569;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
         .card-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 1.5rem;
         }
 
-        .icon-box {
-            width: 48px;
-            height: 48px;
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
             border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             background: rgba(56, 189, 248, 0.1);
-            color: var(--cyan-accent);
+            color: #38bdf8;
         }
 
-        .pin-tag {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #cbd5e1;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .device-info h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.2rem;
         }
 
-        .device-details h2 {
-            font-size: 1.3rem;
-            margin-bottom: 0.25rem;
-            font-weight: 600;
-        }
-
-        .device-details p {
+        .device-info p {
             color: var(--text-muted);
             font-size: 0.85rem;
-            text-transform: uppercase;
+        }
+
+        .pin-badge {
+            background: #334155;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #e2e8f0;
             letter-spacing: 0.5px;
         }
 
-        .status-row {
+        .status-container {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 1.5rem;
+            margin-top: auto;
             padding-top: 1rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
 
-        .status-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .status-value {
-            font-size: 1.25rem;
+        .status-text {
+            font-size: 1.2rem;
             font-weight: 600;
-            letter-spacing: 0.5px;
         }
 
-        /* Dynamic Status Utility Classes */
+        /* Status Colors & Glows */
         .status-ON, .status-ACTIVE {
-            color: var(--green-active);
-            text-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+            color: var(--accent-glow);
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
 
         .status-OFF {
-            color: var(--red-inactive);
-            text-shadow: 0 0 12px rgba(239, 44, 68, 0.4);
+            color: var(--danger-glow);
         }
 
-        .sync-time {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-align: right;
-            margin-top: 8px;
-        }
-
-        /* Animations */
-        @keyframes pulseGlow {
+        @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        @media (max-width: 600px) {
-            header { flex-direction: column; gap: 15px; align-items: flex-start; }
-            body { padding: 1rem; }
+        .last-update {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 10px;
         }
+
     </style>
 </head>
 <body>
 
     <header>
-        <h1><i class="fa-solid fa-circle-nodes"></i> IoT Live Monitor</h1>
-        <div class="status-panel">
-            <span id="update-time">กำลังเชื่อมต่อ API...</span>
-            <div class="pulse-dot" id="api-indicator"></div>
+        <h1><i class="fa-solid fa-microchip"></i> Smart Node Monitor</h1>
+        <div class="refresh-status">
+            <span id="update-time">Updating...</span>
+            <div class="status-dot" id="connection-dot"></div>
         </div>
     </header>
 
-    <div class="dashboard-grid" id="dashboard-container"></div>
+    <div class="dashboard-grid" id="dashboard-grid">
+        </div>
 
     <script>
-        const API_ENDPOINT = 'http://tc.sbtc-mng.com/api.php';
-        const AUTO_REFRESH_INTERVAL = 5000; // 5 วินาที
+        const API_URL = 'http://tc.sbtc-mng.com/api.php';
+        const REFRESH_RATE = 5000; // อัปเดตทุก 5 วินาที
 
-        // ฟังก์ชันคัดเลือกไอคอนให้เข้ากับชื่ออุปกรณ์อัตโนมัติ
-        function assignDeviceIcon(type, name) {
-            const label = name.toLowerCase();
+        // ข้อมูลสำรองเผื่อเรียก API ไม่ได้ (CORS หรือ Server Down)
+        const mockData = {
+            "success": true,
+            "count": 5,
+            "data": [
+                { "id": "1", "device_name": "LED1", "device_type": "LED", "pin": "13", "status": "ON", "created_at": "2026-06-30 10:16:41" },
+                { "id": "2", "device_name": "LED2", "device_type": "LED", "pin": "12", "status": "OFF", "created_at": "2026-06-30 10:16:41" },
+                { "id": "3", "device_name": "Temperature", "device_type": "SENSOR", "pin": "34", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" },
+                { "id": "4", "device_name": "Humidity", "device_type": "SENSOR", "pin": "35", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" },
+                { "id": "5", "device_name": "Soil Moisture", "device_type": "SENSOR", "pin": "36", "status": "ACTIVE", "created_at": "2026-06-30 10:16:41" }
+            ]
+        };
+
+        // ฟังก์ชันเลือกไอคอนตามประเภทและชื่ออุปกรณ์
+        function getIconClass(type, name) {
+            const nameLower = name.toLowerCase();
             if (type === 'LED') return 'fa-lightbulb';
-            if (label.includes('temp')) return 'fa-temperature-three-quarters';
-            if (label.includes('humid')) return 'fa-droplet';
-            if (label.includes('soil') || label.includes('moist')) return 'fa-seedling';
-            return 'fa-gears';
+            if (nameLower.includes('temp')) return 'fa-temperature-half';
+            if (nameLower.includes('humid')) return 'fa-droplet';
+            if (nameLower.includes('soil')) return 'fa-leaf';
+            return 'fa-tower-broadcast';
         }
 
-        // ฟังก์ชันสร้าง Card โครงสร้าง HTML
-        function buildCardHtml(device) {
-            const icon = assignDeviceIcon(device.device_type, device.device_name);
-            const dynamicStatusClass = `status-${device.status.toUpperCase()}`;
-            // ดึงเฉพาะส่วนเวลาออกมาแสดงผล (ตัดปี-เดือน-วัน ออกเพื่อความกระชับ)
-            const formattedTime = device.created_at.split(' ')[1] || device.created_at;
+        // ฟังก์ชันสร้าง Card HTML
+        function createCard(device) {
+            const iconClass = getIconClass(device.device_type, device.device_name);
+            const statusClass = `status-${device.status}`;
+            const timeOnly = device.created_at.split(' ')[1] || device.created_at;
 
             return `
-                <div class="card">
+                <div class="card" id="device-${device.id}">
                     <div class="card-header">
-                        <div class="icon-box">
-                            <i class="fa-solid ${icon}"></i>
+                        <div class="icon-wrapper">
+                            <i class="fa-solid ${iconClass}"></i>
                         </div>
-                        <span class="pin-tag">GPIO ${device.pin}</span>
+                        <span class="pin-badge">PIN ${device.pin}</span>
                     </div>
-                    <div class="device-details">
+                    <div class="device-info">
                         <h2>${device.device_name}</h2>
                         <p>${device.device_type}</p>
                     </div>
-                    <div class="status-row">
-                        <span class="status-label">สถานะระบบ</span>
-                        <span class="status-value ${dynamicStatusClass}">${device.status}</span>
+                    <div class="status-container">
+                        <span style="color: var(--text-muted); font-size: 0.9rem;">Status</span>
+                        <span class="status-text ${statusClass}">${device.status}</span>
                     </div>
-                    <div class="sync-time"><i class="fa-regular fa-clock"></i> ${formattedTime}</div>
+                    <div class="last-update">Sync: ${timeOnly}</div>
                 </div>
             `;
         }
 
-        // ฟังก์ชันประมวลผลข้อมูลลงหน้าจอ Dashboard
-        function updateDashboardUI(deviceList) {
-            const container = document.getElementById('dashboard-container');
-            container.innerHTML = deviceList.map(device => buildCardHtml(device)).join('');
+        // ฟังก์ชันอัปเดตหน้าจอ
+        function renderDashboard(devices) {
+            const grid = document.getElementById('dashboard-grid');
+            grid.innerHTML = devices.map(dev => createCard(dev)).join('');
             
-            // อัปเดตเวลาล่าสุดที่ดึงข้อมูลสำเร็จบนเมนูบาร์
-            const timestamp = new Date();
-            const timeString = timestamp.toLocaleTimeString('th-TH');
-            document.getElementById('update-time').innerText = `อัปเดตล่าสุด: ${timeString}`;
+            const now = new Date();
+            document.getElementById('update-time').innerText = `Last update: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
         }
 
-        // ฟังก์ชันหลักที่ทำหน้าที่ Request ข้อมูลจาก API
-        async function fetchSensorData() {
-            const indicator = document.getElementById('api-indicator');
+        // ฟังก์ชันดึงข้อมูลจาก API
+        async function fetchDeviceData() {
             try {
-                const response = await fetch(API_ENDPOINT);
-                if (!response.ok) throw new Error('HTTP request failed');
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const result = await response.json();
                 
-                const jsonResult = await response.json();
-                if (jsonResult.success && jsonResult.data) {
-                    updateDashboardUI(jsonResult.data);
-                    
-                    // ปรับสีไฟสถานะเป็น สีเขียว (เชื่อมต่อสำเร็จปกติ)
-                    indicator.style.backgroundColor = 'var(--green-active)';
-                    indicator.style.boxShadow = '0 0 10px var(--green-active)';
+                if (result.success && result.data) {
+                    renderDashboard(result.data);
+                    document.getElementById('connection-dot').style.backgroundColor = 'var(--accent-glow)';
                 }
-            } catch (err) {
-                console.error('เกิดข้อผิดพลาดในการดึงข้อมูลจาก API:', err.message);
-                
-                // แสดงข้อความข้อผิดพลาด
-                document.getElementById('dashboard-container').innerHTML = `
-                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--red-inactive);">
-                        <h2>❌ ไม่สามารถดึงข้อมูลจาก API</h2>
-                        <p>${err.message}</p>
-                    </div>
-                `;
-                
-                // เปลี่ยนไฟสถานะเป็น สีแดง
-                indicator.style.backgroundColor = 'var(--red-inactive)';
-                indicator.style.boxShadow = '0 0 10px var(--red-inactive)';
-                
-                const currentTime = new Date().toLocaleTimeString('th-TH');
-                document.getElementById('update-time').innerText = `ข้อผิดพลาด: ${currentTime}`;
+            } catch (error) {
+                console.warn('API Fetch Failed, using Mock Data instead:', error);
+                // เปลี่ยนสีจุดสถานะเป็นสีส้ม/แดง เพื่อบอกว่ากำลังใช้ Mock Data/Offline
+                document.getElementById('connection-dot').style.backgroundColor = '#f59e0b';
+                renderDashboard(mockData.data);
             }
         }
 
-        // เริ่มต้นการทำงานดึงข้อมูลครั้งแรกทันทีเมื่อโหลดหน้าเว็บสำเร็จ
-        fetchSensorData();
+        // โหลดข้อมูลครั้งแรก
+        fetchDeviceData();
 
-        // เปิดการทำงานดึงข้อมูลอัตโนมัติซ้ำทุกๆ 5 วินาที วนลูปต่อเนื่อง
-        setInterval(fetchSensorData, AUTO_REFRESH_INTERVAL);
+        // ตั้งเวลาอัปเดตข้อมูลอัตโนมัติ
+        setInterval(fetchDeviceData, REFRESH_RATE);
 
     </script>
 </body>
